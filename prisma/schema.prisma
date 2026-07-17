@@ -1,0 +1,90 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id          String       @id @default(uuid())
+  nom         String
+  prenom      String
+  password    String       // À hacher avec bcrypt/argon2
+  photo       String?
+  email       String       @unique
+  github      String?
+  
+  bookmarks   Bookmark[]   // Relation vers ENREGISTRER
+  collections Collection[] // Relation vers COLLECTION
+}
+
+model Website {
+  id            String         @id @default(uuid())
+  url           String         @unique
+  titre         String
+  description   String?        @db.Text
+  screenshotUrl String?        @map("screenshot_url")
+  resumerIa     String?        @map("resumer_ia") @db.Text
+  isAnalyzed    Boolean        @default(false)
+  
+  bookmarks     Bookmark[]     // Relation vers ENREGISTRER
+  tags          TagOnWebsite[] // Relation vers AVOIR
+}
+
+// Table associative ENREGISTRER
+model Bookmark {
+  id            String                 @id @default(uuid())
+  websiteId     String                 @map("id_WEBSITE")
+  userId        String                 @map("id_USER")
+  createdAt     DateTime               @default(now()) @map("Created_at")
+  favori        Boolean                @default(false)
+  notePersonnel String?                @map("note_personnel") @db.Text
+
+  website       Website                @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  user          User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Relation Many-to-Many entre vos Bookmarks et les Collections
+  collections   BookmarkOnCollection[] 
+
+  @@unique([websiteId, userId])
+}
+
+model Collection {
+  id           String                 @id @default(uuid())
+  nom          String
+  dateCreation DateTime               @default(now()) @map("date_creation")
+  userId       String                 @map("user_id")
+
+  user         User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bookmarks    BookmarkOnCollection[] // Les favoris contenus dans cette collection
+}
+
+// Table intermédiaire implicite pour lier les Bookmarks aux Collections
+model BookmarkOnCollection {
+  bookmarkId   String     @map("bookmark_id")
+  collectionId String     @map("collection_id")
+
+  bookmark     Bookmark   @relation(fields: [bookmarkId], references: [id], onDelete: Cascade)
+  collection   Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+
+  @@id([bookmarkId, collectionId])
+}
+
+model Tag {
+  id       String         @id @default(uuid())
+  nom      String         @unique
+  websites TagOnWebsite[] // Relation vers AVOIR
+}
+
+// Table associative AVOIR
+model TagOnWebsite {
+  tagId     String   @map("tag_id")
+  websiteId String   @map("website_id")
+
+  tag       Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  website   Website  @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+
+  @@id([tagId, websiteId])
+}
