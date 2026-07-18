@@ -1,39 +1,43 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Search } from "lucide-react";
 import { getBookmarks } from "@/lib/actions/bookmarks";
-import BookmarkCard from "@/components/ui/BookmarkCard";
 import { Bookmark } from "@/app/generated/prisma/models";
+import BookmarkCard from "@/components/ui/BookmarkCard";
+import AddBookmarkForm from "@/components/ui/AddBookmarkForm";
 
-async function loadBookmarks(search: string, onlyFavorites: boolean): Promise<Bookmark[]> {
-  return await getBookmarks({ search, onlyFavorites });
+async function loadBookmarks(search: string): Promise<Bookmark[]> {
+  return await getBookmarks({ search });
 }
 
-export default function FavoritesPage() {
+export default function BookmarksPage() {
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
+  const [showForm, setShowForm] = useState(false);
 
   const handleSearch = async (value: string) => {
     setSearch(value);
     setLoading(true);
-    const results = await loadBookmarks(value, true);
+    const results = await loadBookmarks(value);
     setBookmarks(results);
     setLoading(false);
   };
 
-  useEffect(() => {
-    handleSearch('');
-  }, []);
-
   return (
     <div className="p-6 max-w-7xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold mb-2 flex items-center gap-2">
-          Favorites
-        </h1>
-        <p className="text-gray-600">Your favorite bookmarks</p>
+      <div className="flex items-start justify-between mb-6">
+        <div>
+          <h1 className="text-3xl font-bold mb-2">All Bookmarks</h1>
+          <p className="text-gray-600">Manage your saved websites and links</p>
+        </div>
+        <button
+          onClick={() => setShowForm(!showForm)}
+          className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+        >
+          {showForm ? 'Hide Form' : 'Add Bookmark'}
+        </button>
       </div>
 
       <div className="mb-6">
@@ -43,7 +47,7 @@ export default function FavoritesPage() {
           </div>
           <input
             type="text"
-            placeholder="Search favorite bookmarks..."
+            placeholder="Search bookmarks..."
             value={search}
             onChange={(e) => handleSearch(e.target.value)}
             className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -51,14 +55,20 @@ export default function FavoritesPage() {
         </div>
       </div>
 
+      {showForm && (
+        <div className="mb-8">
+          <AddBookmarkForm />
+        </div>
+      )}
+
       {loading ? (
         <div className="text-center py-12">
           <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          <p className="mt-2 text-gray-600">Loading favorites...</p>
+          <p className="mt-2 text-gray-600">Loading bookmarks...</p>
         </div>
       ) : bookmarks.length === 0 ? (
         <div className="text-center py-12 bg-gray-50 rounded-lg">
-          <p className="text-gray-600 mb-4">No favorites found</p>
+          <p className="text-gray-600 mb-4">No bookmarks found</p>
           {search && (
             <button
               onClick={() => handleSearch('')}
